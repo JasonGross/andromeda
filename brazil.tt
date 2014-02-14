@@ -1,0 +1,80 @@
+assume nat : Fib
+assume O : nat
+assume S : nat -> nat
+
+assume List : nat -> Fib;;
+
+/////////////////////////
+// Pairing and Projection
+/////////////////////////
+
+define p1 := (O, S(O))
+define n2 := p1.fst
+
+
+assume l3 : List (S(S(S(O))))
+assume length : (n : nat) -> List n -> nat
+
+assume p2 : (n : nat) * (List n)
+define ln := p2.snd
+define p3 := (S(S(S(O))), l3)
+define p4 := ( (S(S(S(O))), l3) :> (n:nat) * List(n) )
+
+
+////////////////////
+// Equivalence Types
+////////////////////
+
+assume plus : nat -> nat -> nat
+assume oneonetwo : plus (S O) (S O) == S(S(O)) @ nat
+assume sym : (x:nat) -> (y:nat) -> (x == y @ nat) -> (y == x @ nat)
+
+define twooneone := sym (plus (S O) (S O)) (S(S(O))) oneonetwo
+
+
+////////////////////////
+// Brazil-Style Handlers
+////////////////////////
+
+assume one : nat
+assume won : nat
+assume homonym : (one == won @ nat)
+
+assume singleton_extract : List one -> nat
+assume mylist : List won
+
+define answer := handle singleton_extract mylist
+                 with   homonym
+                 end
+
+//////////////////////////////
+// Deeper equivalence checking
+//////////////////////////////
+
+
+// One handler
+//
+assume pair1 : List won * (List won -> List one)
+
+define pair2 := handle
+                  (pair1 :> List one * (List one -> List won))
+                with
+                  homonym
+                end
+
+// Multiple handlers
+
+assume red : nat
+assume crimson : nat
+assume synonym : (red == crimson @ nat)
+
+assume pair3 : List red * List won
+
+define pair4 := handle
+                  (pair3 :> List crimson * List one)
+                with
+                  homonym | synonym | oneonetwo // Yes, this last one is unnecessary
+                end
+
+#context
+

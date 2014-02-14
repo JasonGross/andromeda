@@ -6,33 +6,28 @@ module I = Input
 type term = term' * Common.position
 and term' =
   | Var of int
-  | Type
+  | Universe of universe
   | Lambda of Common.variable * term option * term
   | Pi of Common.variable * term * term
   | App of term * term
   | Sigma of Common.variable * term * term
   | Pair of term * term
   | Proj of string * term
-  | Ascribe of term * term
-  | Operation of operation_tag * term list
-  | Handle of term * handler
-  | Equiv of term * term * term
+  | Ascribe of term * term      (* Technically unnecessary for Brazil *)
+  | Handle of term * handler list
+  | Equiv of eqsort * term * term * term
+  | J of eqsort * term * term * term
+  | Refl of eqsort * term
 
-and operation_tag = I.operation_tag =
-  | Inhabit
-  | Coerce
+and universe = I.universe =
+  | Type of int
+  | Fib of int
 
-  (*
-and computation = computation' * Common.position
-and computation' =
-  | Return of term
-  | Let of Common.variable * term * computation
-and handler_body = computation
-  *)
-and handler_body = term
+and eqsort = I.eqsort =
+  | Ju
+  | Pr
 
-and handler =
-   (operation_tag * term list * handler_body) list
+and handler = term
 
 type toplevel = toplevel' * Common.position
 and toplevel' =
@@ -60,7 +55,7 @@ let index ~loc x =
 let rec doTerm xs (e, loc) =
   (match e with
     | I.Var x -> Var (index ~loc x xs)
-    | I.Type  -> Type
+    | I.Universe u -> Universe u
     | I.Pi (x, t1, t2) -> Pi (x, doTerm xs t1, doTerm (x :: xs) t2)
     | I.Sigma (x, t1, t2) -> Sigma (x, doTerm xs t1, doTerm (x :: xs) t2)
     | I.Lambda (x, None  , e) -> Lambda (x, None, doTerm (x :: xs) e)
@@ -69,9 +64,10 @@ let rec doTerm xs (e, loc) =
     | I.Pair (e1, e2)   -> Pair (doTerm xs e1, doTerm xs e2)
     | I.Proj (s1, e2) -> Proj (s1, doTerm xs e2)
     | I.Ascribe (e, t) -> Ascribe (doTerm xs e, doTerm xs t)
-    | I.Operation (optag, terms) -> Operation (optag, List.map (doTerm xs) terms)
     | I.Handle (term, h) -> Handle (doTerm xs term, handler xs h)
-    | I.Equiv (t1, t2, t3) -> Equiv (doTerm xs t1, doTerm xs t2, doTerm xs t3)
+    | I.Equiv (o, t1, t2, t3) -> Equiv (o, doTerm xs t1, doTerm xs t2, doTerm xs t3)
+    | I.J (o, t1, t2, t3) -> J (o, doTerm xs t1, doTerm xs t2, doTerm xs t3)
+    | I.Refl (o, t) -> Refl(o, doTerm xs t)
   ),
   loc
 
@@ -83,7 +79,7 @@ and doComputation xs (c, loc) =
   loc
   *)
 
-and handler xs lst = List.map (handler_case xs) lst
+and handler xs lst = List.map (doTerm xs) lst
 (*
 and handler_case xs (optag, terms, c) =
   (optag, List.map (doTerm xs) terms, doComputation xs c)
@@ -97,7 +93,7 @@ and handler_case xs (optag, terms, c) =
 let rec shift ?(c=0) d (e, loc) =
   (match e with
   | Var m -> if (m < c) then Var m else Var(m+d)
-  | Type  -> Type
+  | Universe u -> Universe u
   | Pi (x, t1, t2) -> Pi(x, shift ~c d t1, shift ~c:(c+1) d t2)
   | Sigma (x, t1, t2) -> Sigma(x, shift ~c d t1, shift ~c:(c+1) d t2)
   | Lambda (x, None, e) -> Lambda (x, None, shift ~c:(c+1) d e)
@@ -106,53 +102,45 @@ let rec shift ?(c=0) d (e, loc) =
   | Pair (e1, e2) -> Pair(shift ~c d e1, shift ~c d e2)
   | Proj (s1, e2) -> Proj(s1, shift ~c d e2)
   | Ascribe (e1, t2) -> Ascribe (shift ~c d e1, shift ~c d t2)
-  | Operation (optag, terms) -> Operation (optag, List.map (shift ~c d) terms)
-  | Handle (term, h) -> Handle (shift ~c d term, List.map (shift_handler_case ~c d) h)
-  | Equiv (t1, t2, t3) -> Equiv (shift ~c d t1, shift ~c d t2, shift ~c d t3)),
+  | Handle (term, h) -> Handle (shift ~c d term, List.map (shift ~c d) h)
+  | Equiv (o, t1, t2, t3) -> Equiv (o, shift ~c d t1, shift ~c d t2, shift ~c d t3)
+  | J (o, t1, t2, t3) -> J (o, shift ~c d t1, shift ~c d t2, shift ~c d t3)
+  | Refl (o, t) -> Refl (o, shift ~c d t)),
   loc
 
-and shift_handler_case ?(c=0) d (optag, terms, term) =
-  (* Correct only because we have no pattern matching ! *)
-  (optag, List.map (shift ~c d) terms, shift ~c d term)
 
 
 let rec string_of_term (term, loc) =
-  begin
   match term with
   | Var i -> string_of_int i
-  | Type -> "Type"
+  | Universe u -> I.string_of_universe u
   | Lambda(x,None,t2) ->
       "Lambda(" ^ x ^ "," ^ "_" ^ "," ^ (string_of_term t2) ^ ")"
   | Lambda(x,Some t1,t2) ->
-      "Lambda(" ^ x ^ "," ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
+      "Lambda(" ^ x ^ "," ^ (string_of_terms [t1;t2]) ^ ")"
   | Pi(x,t1,t2) ->
-      "Pi(" ^ x ^ "," ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
+      "Pi(" ^ x ^ "," ^ (string_of_terms [t1;t2]) ^ ")"
   | Sigma(x,t1,t2) ->
-      "Sigma(" ^ x ^ "," ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
+      "Sigma(" ^ x ^ "," ^ (string_of_terms [t1;t2]) ^ ")"
   | App(t1,t2) ->
-      "App(" ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
+      "App(" ^ (string_of_terms [t1;t2]) ^ ")"
   | Pair(t1,t2) ->
-      "Pair(" ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
+      "Pair(" ^ (string_of_terms [t1;t2]) ^ ")"
   | Proj(s1, t2) ->
       "Proj(\"" ^ s1 ^ "\"," ^ (string_of_term t2) ^ ")"
   | Ascribe(t1,t2) ->
-      "Ascribe(" ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
-  | Operation(tag,terms) ->
-      "Operation(" ^ (string_of_tag tag) ^ "," ^ (string_of_terms terms) ^ ")"
+      "Ascribe(" ^ (string_of_terms [t1;t2]) ^ ")"
   | Handle(term, cases) ->
-      "Handle(" ^ (string_of_term term) ^ "," ^ (String.concat "|" (List.map
-      string_of_case cases)) ^ ")"
-  | Equiv(t1,t2,t3) ->
-      "Equiv(" ^ (string_of_term t1) ^ "," ^ (string_of_term t2)
-          ^ "," ^ (string_of_term t3) ^ ")"
-  end
-
-and string_of_tag tag = I.string_of_tag tag
+      "Handle(" ^ (string_of_term term) ^ "," ^
+      string_of_terms cases ^ ")"
+  | Equiv(o,t1,t2,t3) ->
+      "Equiv(" ^ (I.string_of_eqsort o) ^ "," ^ string_of_terms [t1; t2; t3] ^ ")"
+  | J(o,t1,t2,t3) ->
+      "J(" ^ (I.string_of_eqsort o) ^ "," ^ string_of_terms [t1; t2; t3] ^ ")"
+  | Refl(o,t) ->
+      "J(" ^ (I.string_of_eqsort o) ^ "," ^ string_of_term t ^ ")"
 
 and string_of_terms terms = (String.concat "," (List.map string_of_term terms))
-
-and string_of_case (tag, terms, c) =
-  (string_of_tag tag) ^ "(" ^ (string_of_terms terms) ^ ") => " ^ (string_of_term c)
 
 
 let print term = print_endline (string_of_term term)

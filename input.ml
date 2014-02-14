@@ -4,33 +4,28 @@
 type term = term' * Common.position
 and term' =
   | Var of Common.variable
-  | Type
+  | Universe of universe
   | Lambda of Common.variable * term option * term
   | Pi of Common.variable * term * term
   | App of term * term
   | Sigma of Common.variable * term * term
   | Pair of term * term
   | Proj of string * term
-  | Ascribe of term * term
-  | Operation of operation_tag * term list
-  | Handle of term * handler
-  | Equiv of term * term * term
+  | Ascribe of term * term      (* Technically unnecessary for Brazil *)
+  | Handle of term * handler list
+  | Equiv of eqsort * term * term * term
+  | J of eqsort * term * term * term
+  | Refl of eqsort * term
 
-and operation_tag =
-  | Inhabit
-  | Coerce
+and universe =
+  | Type of int
+  | Fib of int
 
-  (*
-and computation = computation' * Common.position
-and computation' =
-  | Return of term
-  | Let of Common.variable * term * computation
-and handler_body = computation
-  *)
-and handler_body = term
+and eqsort =
+  | Ju
+  | Pr
 
-and handler =
-   (operation_tag * term list * handler_body) list
+and handler = term
 
 type toplevel = toplevel' * Common.position
 and toplevel' =
@@ -41,44 +36,46 @@ and toplevel' =
   | Quit
 
 let rec string_of_term (term, loc) =
-  begin
   match term with
   | Var x -> x
-  | Type -> "Type"
+  | Universe u -> string_of_universe u
   | Lambda(x,None,t2) ->
       "Lambda(" ^ x ^ "," ^ "_" ^ "," ^ (string_of_term t2) ^ ")"
   | Lambda(x,Some t1,t2) ->
-      "Lambda(" ^ x ^ "," ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
+      "Lambda(" ^ x ^ "," ^ (string_of_terms [t1;t2]) ^ ")"
   | Pi(x,t1,t2) ->
-      "Pi(" ^ x ^ "," ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
+      "Pi(" ^ x ^ "," ^ (string_of_terms [t1;t2]) ^ ")"
   | Sigma(x,t1,t2) ->
-      "Sigma(" ^ x ^ "," ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
+      "Sigma(" ^ x ^ "," ^ (string_of_terms [t1;t2]) ^ ")"
   | App(t1,t2) ->
-      "App(" ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
+      "App(" ^ (string_of_terms [t1;t2]) ^ ")"
   | Pair(t1,t2) ->
-      "Pair(" ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
+      "Pair(" ^ (string_of_terms [t1;t2]) ^ ")"
   | Proj(s1, t2) ->
       "Proj(\"" ^ s1 ^ "\"," ^ (string_of_term t2) ^ ")"
   | Ascribe(t1,t2) ->
-      "Ascribe(" ^ (string_of_term t1) ^ "," ^ (string_of_term t2) ^ ")"
-  | Operation(tag,terms) ->
-      "Operation(" ^ (string_of_tag tag) ^ "," ^ (string_of_terms terms) ^ ")"
+      "Ascribe(" ^ (string_of_terms [t1;t2]) ^ ")"
   | Handle(term, cases) ->
-      "Handle(" ^ (string_of_term term) ^ "," ^ (String.concat "|" (List.map
-      string_of_case cases)) ^ ")"
-  | Equiv(t1,t2,t3) ->
-      "Equiv(" ^ (string_of_term t1) ^ "," ^ (string_of_term t2)
-          ^ "," ^ (string_of_term t3) ^ ")"
-  end
+      "Handle(" ^ (string_of_term term) ^ "," ^
+      string_of_terms cases ^ ")"
+  | Equiv(o,t1,t2,t3) ->
+      "Equiv(" ^ (string_of_eqsort o) ^ "," ^ string_of_terms [t1; t2; t3] ^ ")"
+  | J(o,t1,t2,t3) ->
+      "J(" ^ (string_of_eqsort o) ^ "," ^ string_of_terms [t1; t2; t3] ^ ")"
+  | Refl(o,t) ->
+      "J(" ^ (string_of_eqsort o) ^ "," ^ string_of_term t ^ ")"
 
-and string_of_tag = function
-  | Inhabit -> "Inhabit"
-  | Coerce -> "Coerce"
+
+and string_of_universe = function
+  | Type i -> "Type(" ^ string_of_int i ^ ")"
+  | Fib i -> "Fib(" ^ string_of_int i ^ ")"
+
+and string_of_eqsort = function
+  | Ju -> "Ju"
+  | Pr -> "Pr"
+
 
 and string_of_terms terms = (String.concat "," (List.map string_of_term terms))
-
-and string_of_case (tag, terms, c) =
-  (string_of_tag tag) ^ "(" ^ (string_of_terms terms) ^ ") => " ^ (string_of_term c)
 
 
 let print term = print_endline (string_of_term term)

@@ -2,6 +2,7 @@
   (** The lexer. *)
 
   open Parser
+  module I = Input
 
   let reserved = [
     ("assume", ASSUME) ;
@@ -13,8 +14,13 @@
     (*("let", LET) ;*)
     (*("in", IN) ;*)
     (*("return", RETURN) ;*)
-    ("Type", TYPE) ;
     ("with", WITH) ;
+    ("Type", TYPE);
+    ("Fib", FIB);
+    ("J", JEQUIV);
+    ("j", JEQUAL);
+    ("Refl", REFLEQUIV);
+    ("refl", REFLEQUAL);
   ]
 
   let position_of_lex lex =
@@ -32,6 +38,7 @@ rule token = parse
   | '\n'                { Lexing.new_line lexbuf; token lexbuf }
   | "//"[^'\n']*        { token lexbuf }
   | [' ' '\r' '\t']     { token lexbuf }
+
   | (name | patternvar) { let s = Lexing.lexeme lexbuf in
                             try
                               List.assoc s reserved
@@ -43,10 +50,10 @@ rule token = parse
   | "#quit"             { QUIT }
   | '('                 { LPAREN }
   | ')'                 { RPAREN }
-  | '['                 { LBRACK }
-  | ']'                 { RBRACK }
+  (*| '['                 { LBRACK }*)
+  (*| ']'                 { RBRACK }*)
   | ':'                 { COLON }
-  | "::"                { DCOLON }
+  (*| "::"                { DCOLON }*)
   | ":>"                { ASCRIBE }
   | "*"                 { STAR }
   | ";;"                { SEMISEMI }
@@ -55,13 +62,15 @@ rule token = parse
                           let field =  String.sub s 1 (String.length s - 1)
                           in PROJ field }
   | '|'                 { BAR }
-  | '?'                 { QUESTIONMARK }
+  (*| '?'                 { QUESTIONMARK }*)
   | "->"                { ARROW }
   | "=>"                { DARROW }
   | ":="                { COLONEQ }
   | "=="                { EQEQ }
   | "@"                 { AT }
-  | ">->"               { COERCE }
+  (*| ">->"               { COERCE }*)
+
+  | '(' (numeral as s) ')'    { UNUM (int_of_string s) }
 
   | eof                 { EOF }
 
