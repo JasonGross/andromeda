@@ -32,6 +32,9 @@ assume sym : (x:nat) -> (y:nat) -> (x == y @ nat) -> (y == x @ nat)
 define twooneone := sym (plus (S O) (S O)) (S(S(O))) oneonetwo
 
 
+define zero_equal_zero := refl O
+define zero_equiv_zero := Refl O
+
 ////////////////////////
 // Brazil-Style Handlers
 ////////////////////////
@@ -73,7 +76,8 @@ assume pair3 : List red * List won
 define pair4 := handle
                   (pair3 :> List crimson * List one)
                 with
-                  homonym | synonym | oneonetwo // Yes, this last one is unnecessary
+                  homonym | synonym 
+                  | oneonetwo | zero_equiv_zero // Yes, these are unnecessary
                 end
 
 #context
