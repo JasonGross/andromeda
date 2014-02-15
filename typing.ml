@@ -190,6 +190,9 @@ let rec infer env (term, loc) =
         S.Sigma(x, t1, t2), S.U (S.universe_join u1 u2)
       end
 
+    | D.Universe u ->
+        S.U u, S.U (S.universe_classifier u)
+
     | D.App (term1, term2) ->
         begin
           let e1, t1 = infer env term1  in
@@ -251,8 +254,6 @@ let rec infer env (term, loc) =
         let env'= addHandlers env handlers in
         infer env' term
 
-    | D.Universe u -> S.U u, S.U (S.universe_classifier u)
-
     | D.Equiv(o, term1, term2, term3) ->
         begin
           let ty3, u3 = infer_ty env term3 in
@@ -301,6 +302,7 @@ and infer_eq env term o =
       else
         Error.typing "Wrong sort of equivalence: %t" (print_term env ty)
   | _ -> Error.typing "Not an equivalence: %t" (print_term env exp)
+
 
 and check env ((term1, loc) as term) t =
   match term1, whnf env t with

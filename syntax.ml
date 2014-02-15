@@ -5,7 +5,7 @@ module D = Desugar
 (** Abstract syntax of expressions, where de Bruijn indices are used to represent
   variables. *)
 type term =
-| Var of int
+| Var    of int
 | Lambda of Common.variable * term * term
 | Pi     of Common.variable * term * term
 | App    of term * term

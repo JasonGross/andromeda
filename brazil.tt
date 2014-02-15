@@ -1,8 +1,8 @@
-assume nat : Fib
+assume nat : Type 
 assume O : nat
 assume S : nat -> nat
 
-assume List : nat -> Fib;;
+assume List : nat -> Type;;
 
 /////////////////////////
 // Pairing and Projection
@@ -65,11 +65,11 @@ define pair2 := handle
                   homonym
                 end
 
-// Multiple handlers
+// Multiple handlers, alternate == @ syntax
 
 assume red : nat
 assume crimson : nat
-assume synonym : (red == crimson @ nat)
+assume synonym : Eq nat red crimson 
 
 assume pair3 : List red * List won
 

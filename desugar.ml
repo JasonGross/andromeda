@@ -6,6 +6,7 @@ module I = Input
 type term = term' * Common.position
 and term' =
   | Var of int
+  | Num of int
   | Universe of universe
   | Lambda of Common.variable * term option * term
   | Pi of Common.variable * term * term
@@ -19,9 +20,9 @@ and term' =
   | J of eqsort * term * term * term
   | Refl of eqsort * term
 
-and universe = I.universe =
+and universe =
   | Type of int
-  | Fib of int
+  | Fib  of int
 
 and eqsort = I.eqsort =
   | Ju
@@ -55,11 +56,13 @@ let index ~loc x =
 let rec doTerm xs (e, loc) =
   (match e with
     | I.Var x -> Var (index ~loc x xs)
-    | I.Universe u -> Universe u
+    | I.Num n -> Num n
+    | I.Universe u -> doUniverse u 0
     | I.Pi (x, t1, t2) -> Pi (x, doTerm xs t1, doTerm (x :: xs) t2)
     | I.Sigma (x, t1, t2) -> Sigma (x, doTerm xs t1, doTerm (x :: xs) t2)
     | I.Lambda (x, None  , e) -> Lambda (x, None, doTerm (x :: xs) e)
     | I.Lambda (x, Some t, e) -> Lambda (x, Some (doTerm xs t), doTerm (x :: xs) e)
+    | I.App ((I.Universe u,_), (I.Num n,_)) -> doUniverse u n
     | I.App (e1, e2)   -> App (doTerm xs e1, doTerm xs e2)
     | I.Pair (e1, e2)   -> Pair (doTerm xs e1, doTerm xs e2)
     | I.Proj (s1, e2) -> Proj (s1, doTerm xs e2)
@@ -70,6 +73,11 @@ let rec doTerm xs (e, loc) =
     | I.Refl (o, t) -> Refl(o, doTerm xs t)
   ),
   loc
+
+and doUniverse u n =
+  match u with
+  | I.Type -> Universe (Type n)
+  | I.Fib  -> Universe (Fib  n)
 
 (*
 and doComputation xs (c, loc) =
@@ -93,6 +101,7 @@ and handler_case xs (optag, terms, c) =
 let rec shift ?(c=0) d (e, loc) =
   (match e with
   | Var m -> if (m < c) then Var m else Var(m+d)
+  | Num n -> Num n
   | Universe u -> Universe u
   | Pi (x, t1, t2) -> Pi(x, shift ~c d t1, shift ~c:(c+1) d t2)
   | Sigma (x, t1, t2) -> Sigma(x, shift ~c d t1, shift ~c:(c+1) d t2)
@@ -108,12 +117,11 @@ let rec shift ?(c=0) d (e, loc) =
   | Refl (o, t) -> Refl (o, shift ~c d t)),
   loc
 
-
-
 let rec string_of_term (term, loc) =
   match term with
   | Var i -> string_of_int i
-  | Universe u -> I.string_of_universe u
+  | Num n -> string_of_int n
+  | Universe u -> string_of_universe u
   | Lambda(x,None,t2) ->
       "Lambda(" ^ x ^ "," ^ "_" ^ "," ^ (string_of_term t2) ^ ")"
   | Lambda(x,Some t1,t2) ->
@@ -142,6 +150,9 @@ let rec string_of_term (term, loc) =
 
 and string_of_terms terms = (String.concat "," (List.map string_of_term terms))
 
+and string_of_universe = function
+  | Type i -> "Type(" ^ string_of_int i ^ ")"
+  | Fib  i -> "Fib(" ^ string_of_int i ^ ")"
 
 let print term = print_endline (string_of_term term)
 

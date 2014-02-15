@@ -19,7 +19,7 @@
 
 %token FORALL FUN
 %token <string> NAME
-%token <int> UNUM
+%token <int> NUM
 %token LPAREN RPAREN
 %token COLON ASCRIBE COMMA SEMISEMI
 %token ARROW DARROW STAR
@@ -27,6 +27,7 @@
 %token TYPE FIB
 %token JEQUIV JEQUAL
 %token REFLEQUIV REFLEQUAL
+%token EQEQUIV EQEQUAL
 %token COLONEQ
 %token EQ EQEQ AT
 (* %token EVAL *)
@@ -86,7 +87,7 @@ equiv_term: mark_position(plain_equiv_term) { $1 }
 plain_equiv_term:
     | plain_arrow_term                         { $1 }
     | arrow_term EQEQ arrow_term AT equiv_term { Equiv(Ju, $1, $3, $5) }
-    | arrow_term EQ arrow_term AT equiv_term { Equiv(Pr, $1, $3, $5) }
+    | arrow_term EQ arrow_term AT equiv_term   { Equiv(Pr, $1, $3, $5) }
 
 arrow_term: mark_position(plain_arrow_term) { $1 }
 plain_arrow_term:
@@ -102,22 +103,24 @@ plain_app_term:
   | app_term simple_term   { App ($1, $2) }
   | REFLEQUIV simple_term          { Refl(Ju, $2) }
   | REFLEQUAL simple_term          { Refl(Pr, $2) }
-
+  | EQEQUAL simple_term simple_term simple_term { Equiv(Pr, $3, $4, $2) }
+  | EQEQUIV simple_term simple_term simple_term { Equiv(Ju, $3, $4, $2) }
 
 simple_term: mark_position(plain_simple_term) { $1 }
 plain_simple_term:
-  | NAME                           { Var $1 }
-  | TYPE                           { Universe (Type 0) }
-  | FIB                            { Universe (Fib 0) }
-  | TYPE UNUM                      { Universe (Type $2) }
-  | FIB UNUM                       { Universe (Fib $2) }
-  | LPAREN plain_term RPAREN       { $2 }
-  | LPAREN term COMMA term RPAREN  { Pair($2, $4) }
-  | LPAREN term ASCRIBE term RPAREN    { Ascribe ($2, $4) }
-  | HANDLE term WITH handler END   { Handle ($2, $4) }
-  | JEQUIV LPAREN term COMMA term COMMA term RPAREN { J(Ju,$3,$5,$7) }
-  | JEQUAL LPAREN term COMMA term COMMA term RPAREN { J(Pr,$3,$5,$7) }
-  | simple_term PROJ         { Proj($2, $1) }
+  | NAME                            { Var $1 }
+  | NUM                             { Num $1 }
+  | FIB             { Universe Fib }
+  | TYPE            { Universe Type }
+  | LPAREN plain_term RPAREN        { $2 }
+  | LPAREN term COMMA term RPAREN   { Pair($2, $4) }
+  | LPAREN term ASCRIBE term RPAREN { Ascribe ($2, $4) }
+  | HANDLE term WITH handler END    { Handle ($2, $4) }
+  | JEQUIV LPAREN term COMMA term COMMA term RPAREN
+                                    { J(Ju,$3,$5,$7) }
+  | JEQUAL LPAREN term COMMA term COMMA term RPAREN
+                                    { J(Pr,$3,$5,$7) }
+  | simple_term PROJ                { Proj($2, $1) }
 
 handler:
   | cs=separated_list(BAR, term)  { cs }

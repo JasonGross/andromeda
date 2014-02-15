@@ -17,10 +17,10 @@
     ("with", WITH) ;
     ("Type", TYPE);
     ("Fib", FIB);
-    ("J", JEQUIV);
-    ("j", JEQUAL);
     ("Refl", REFLEQUIV);
     ("refl", REFLEQUAL);
+    ("Eq", EQEQUIV);
+    ("eq", EQEQUAL);
   ]
 
   let position_of_lex lex =
@@ -70,7 +70,7 @@ rule token = parse
   | "@"                 { AT }
   (*| ">->"               { COERCE }*)
 
-  | '(' (numeral as s) ')'    { UNUM (int_of_string s) }
+  | (numeral as s)      { NUM (int_of_string s) }
 
   | eof                 { EOF }
 

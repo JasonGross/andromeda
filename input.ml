@@ -4,6 +4,7 @@
 type term = term' * Common.position
 and term' =
   | Var of Common.variable
+  | Num of int
   | Universe of universe
   | Lambda of Common.variable * term option * term
   | Pi of Common.variable * term * term
@@ -18,8 +19,8 @@ and term' =
   | Refl of eqsort * term
 
 and universe =
-  | Type of int
-  | Fib of int
+  | Type
+  | Fib
 
 and eqsort =
   | Ju
@@ -38,6 +39,7 @@ and toplevel' =
 let rec string_of_term (term, loc) =
   match term with
   | Var x -> x
+  | Num n -> string_of_int n
   | Universe u -> string_of_universe u
   | Lambda(x,None,t2) ->
       "Lambda(" ^ x ^ "," ^ "_" ^ "," ^ (string_of_term t2) ^ ")"
@@ -67,8 +69,8 @@ let rec string_of_term (term, loc) =
 
 
 and string_of_universe = function
-  | Type i -> "Type(" ^ string_of_int i ^ ")"
-  | Fib i -> "Fib(" ^ string_of_int i ^ ")"
+  | Type -> "Type"
+  | Fib -> "Fib"
 
 and string_of_eqsort = function
   | Ju -> "Ju"
