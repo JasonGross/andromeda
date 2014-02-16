@@ -130,6 +130,13 @@ match u1, u2 with
   | Type i, Fib j
   | Type i, Type j -> Type (max i j)
 
+let universe_le u1 u2 =
+match u1, u2 with
+  | Fib i, Fib j
+  | Fib i, Type j
+  | Type i, Type j -> i <= j
+  | Type _, Fib _  -> false
+
 (** [universe_classifier u] returns the universe classifying the given
  *  universe [u] *)
 let universe_classifier = function

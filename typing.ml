@@ -355,11 +355,21 @@ and check env ((term1, loc) as term) t =
          * which universe to compare t' and t in. Of course, it presumes
          * they belong to a common universe, so a non-subsumptive
          * hierarchy would cause problems here. *)
-        if not (equal_structural env t' t ) then
-          Error.typing ~loc "expression %t has type %t\nbut it should have type %t"
-            (print_term env e) (print_term env t') (print_term env t)
-        else
-          e
+        match t with
+        | S.U u ->
+            begin
+              match as_u env t' with
+              | S.U u' when S.universe_le u' u -> e
+              | _ ->
+                    Error.typing ~loc "expression %t has type %t\nbut should have type %t"
+                      (print_term env e) (print_term env t') (print_term env t)
+            end
+        | _ ->
+            if not (equal_structural env t' t ) then
+              Error.typing ~loc "expression %t has type %t\nbut should have type %t"
+              (print_term env e) (print_term env t') (print_term env t)
+            else
+              e
 
 
 
