@@ -59,11 +59,10 @@ define answer := handle singleton_extract mylist
 //
 assume pair1 : List won * (List won -> List one)
 
-define pair2 := handle
-                  (pair1 :> List one * (List one -> List won))
-                with
-                  homonym
-                end
+with homonym          // The downside of this syntax is
+                      // That there's no way to end the scope of this
+                      // handler...
+define pair2 := (pair1 :> List one * (List one -> List won))
 
 // Multiple handlers, alternate == @ syntax
 
@@ -76,7 +75,8 @@ assume pair3 : List red * List won
 define pair4 := handle
                   (pair3 :> List crimson * List one)
                 with
-                  homonym | synonym
+                  // homonym |              // Already installed above
+                  synonym
                   | oneonetwo | zero_equiv_zero // Yes, these are unnecessary
                 end
 
@@ -88,9 +88,7 @@ assume T : Type
 assume T_eq : (T == nat -> nat @ Type)
 assume f : T
 
-with T_eq             // The downside of this syntax is
-                      // That there's no way to end the scope of this
-                      // handler...
+with T_eq
 define app := f O
 
 #context
