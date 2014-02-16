@@ -15,8 +15,8 @@
     (*("in", IN) ;*)
     (*("return", RETURN) ;*)
     ("with", WITH) ;
-    ("Type", TYPE);
-    ("Fib", FIB);
+    ("Type", FIB);
+    ("type", TYPE);
     ("Refl", REFLEQUIV);
     ("refl", REFLEQUAL);
     ("Eq", EQEQUIV);

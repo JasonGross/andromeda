@@ -141,16 +141,17 @@ and equal_path env e1 e2 =
   | _, _ -> None
 
 
+and unshift_handler env (installLevel, h1, h2) =
+  let d = currentLevel env - installLevel in
+  S.shift d h1, S.shift d h2
+
 (* We check handlers in both directions, so that the user is not required
  * to worry about symmetry, i.e., which direction to specify the equivalence *)
 and handled env e1 e2 =
-  let level = currentLevel env  in
   let rec loop = function
     | [] -> false
-    | (installLevel, h1', h2')::rest ->
-        let d = level - installLevel  in
-        let h1 = S.shift d h1'  in
-        let h2 = S.shift d h2'  in
+    | handler :: rest ->
+        let h1, h2 = unshift_handler env handler  in
         (e1 = h1) && (e2 = h2)  ||  (e1 = h2) && (e2 = h1) || loop rest
   in
     loop (env.handlers)
@@ -196,14 +197,13 @@ let rec infer env (term, loc) =
     | D.App (term1, term2) ->
         begin
           let e1, t1 = infer env term1  in
-          match whnf env t1 with
-          | S.Pi(_, t11, t12) ->
-            let e2 = check env term2 t11  in
-            let appTy = S.beta t12 e2  in
-            S.App(e1, e2), appTy
-          | _ ->
-            Error.typing ~loc "Applying a term of type %t"
-              (print_term env t1)
+          let _, t11, t12 =
+            match (as_pi env t1) with
+            | S.Pi(x, t1, t2) -> x, t1, t2
+            | _ -> Error.typing "Not a function: %t" (print_term env t1)  in
+          let e2 = check env term2 t11  in
+          let appTy = S.beta t12 e2  in
+          S.App(e1, e2), appTy
         end
 
     | D.Pair (term1, term2) ->
@@ -217,7 +217,7 @@ let rec infer env (term, loc) =
     | D.Proj (("1"|"fst"), term2) ->
         begin
           let e2, t2 = infer env term2  in
-          match whnf env t2 with
+          match as_sigma env t2 with
           | S.Sigma(_, t21, _) ->  S.Proj(1, e2), t21
           | _ -> Error.typing ~loc "Projecting from %t with type %t"
                     (print_term env e2) (print_term env t2)
@@ -226,7 +226,7 @@ let rec infer env (term, loc) =
     | D.Proj (("2"|"snd"), term2) ->
         begin
           let e2, t2 = infer env term2  in
-          match whnf env t2 with
+          match as_sigma env t2 with
           | S.Sigma(_, _, t22) -> S.Proj(2, e2), S.beta t22 (S.Proj(1, e2))
           | _ -> Error.typing ~loc "Projecting from %t with type %t"
                     (print_term env e2) (print_term env t2)
@@ -289,13 +289,14 @@ and addHandlers env handlers =
 
 and infer_ty env term =
   let t, k = infer env term in
-  match whnf env k with
+  match as_u env k with
   | S.U u -> t, u
   | _ -> Error.typing "Not a type: %t" (print_term env t)
 
+
 and infer_eq env term o =
   let exp, ty = infer env term in
-  match whnf env ty with
+  match as_u env ty with
   | S.Eq(o', e1, e2, t) ->
       if (o = o') then
         exp, e1, e2, t
@@ -304,19 +305,51 @@ and infer_eq env term o =
   | _ -> Error.typing "Not an equivalence: %t" (print_term env exp)
 
 
+and find_handler_reduction env k p =
+  let rec loop = function
+    | [] -> whnf env k
+    | handler::rest ->
+        let h1, h2 = unshift_handler env handler  in
+        if (h1 = k && p h2) then
+          h2
+        else if (h2 = k && p h1) then
+          h1
+        else
+          loop rest  in
+  loop env.handlers
+
+and as_pi env k =
+  find_handler_reduction env k (function S.Pi _ -> true | _ -> false)
+
+and as_sigma env k =
+  find_handler_reduction env k (function S.Sigma _ -> true | _ -> false)
+
+and as_u env k =
+  find_handler_reduction env k (function S.U _ -> true | _ -> false)
+
 and check env ((term1, loc) as term) t =
-  match term1, whnf env t with
-    | D.Lambda (x, None, term2), S.Pi (_, t1, t2) ->
+  match term1 with
+    | D.Lambda (x, None, term2) ->
         begin
-          let e2 = check (add_parameter x t1 env) term2 t2 in
-          S.Lambda(x, t1, e2)
+          match as_pi env t with
+          | S.Pi (_, t1, t2) ->
+              let e2 = check (add_parameter x t1 env) term2 t2 in
+              S.Lambda(x, t1, e2)
+          | _ -> Error.typing ~loc:loc "Lambda cannot have type %t"
+                     (print_term env t)
         end
-    | D.Pair (term1, term2), S.Sigma(x, t1, t2) ->
-        let e1 = check env term1 t1  in
-        let t2' = S.beta t2 e1  in
-        let e2 = check env term2 t2'  in
-        S.Pair(e1, e2)
-    | _, _ ->
+    | D.Pair (term1, term2) ->
+        begin
+          match as_sigma env t with
+          | S.Sigma(x, t1, t2) ->
+              let e1 = check env term1 t1  in
+              let t2' = S.beta t2 e1  in
+              let e2 = check env term2 t2'  in
+              S.Pair(e1, e2)
+          | _ -> Error.typing ~loc:loc "Pair cannot have type %t"
+                     (print_term env t)
+        end
+    | _ ->
       let e, t' = infer env term in
         (* NB: Using equal_structural lets us avoid the question of
          * which universe to compare t' and t in. Of course, it presumes

@@ -2,7 +2,7 @@ assume nat : Type
 assume O : nat
 assume S : nat -> nat
 
-assume List : nat -> Type;;
+assume List : nat -> Type
 
 /////////////////////////
 // Pairing and Projection
@@ -76,9 +76,22 @@ assume pair3 : List red * List won
 define pair4 := handle
                   (pair3 :> List crimson * List one)
                 with
-                  homonym | synonym 
+                  homonym | synonym
                   | oneonetwo | zero_equiv_zero // Yes, these are unnecessary
                 end
+
+//////////////////////////
+// Type-Conversion testing
+//////////////////////////
+
+assume T : Type
+assume T_eq : (T == nat -> nat @ Type)
+assume f : T
+
+with T_eq             // The downside of this syntax is
+                      // That there's no way to end the scope of this
+                      // handler...
+define app := f O
 
 #context
 

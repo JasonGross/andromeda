@@ -51,11 +51,17 @@
 (* If you're going to "optimize" this, please make sure we don't require;; at the
    end of the file. *)
 file:
-  | EOF                         { [] }
-  | topdef file                 { $1 :: $2 }
-  | topdef SEMISEMI file        { $1 :: $3 }
-  | topdirective file           { $1 :: $2 }
-  | topdirective SEMISEMI file  { $1 :: $3 }
+  | filecontents EOF            { $1 }
+
+filecontents:
+  |                              { [] }
+  | topdef filecontents          { $1 :: $2 }
+  | topdirective filecontents    { $1 :: $2 }
+  | tophandler filecontents      { $1 :: $2 }
+
+tophandler: mark_position(plain_tophandler) { $1 }
+plain_tophandler:
+  | WITH handler { TopHandler($2) }
 
 commandline:
   | topdef SEMISEMI        { $1 }

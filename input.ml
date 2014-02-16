@@ -32,6 +32,7 @@ type toplevel = toplevel' * Common.position
 and toplevel' =
   | TopDef of Common.variable * term
   | TopParam of Common.variable list * term
+  | TopHandler of handler list
   | Context
   | Help
   | Quit
