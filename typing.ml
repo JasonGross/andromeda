@@ -200,7 +200,7 @@ let rec infer env (term, loc) =
           let _, t11, t12 =
             match (as_pi env t1) with
             | S.Pi(x, t1, t2) -> x, t1, t2
-            | _ -> Error.typing "Not a function: %t" (print_term env t1)  in
+            | _ -> Error.typing ~loc "Not a function: %t" (print_term env t1)  in
           let e2 = check env term2 t11  in
           let appTy = S.beta t12 e2  in
           S.App(e1, e2), appTy
@@ -292,22 +292,22 @@ and addHandlers env handlers =
         addHandlers env' rest  in
   loop handlers
 
-and infer_ty env term =
+and infer_ty env ((_,loc) as term) =
   let t, k = infer env term in
   match as_u env k with
   | S.U u -> t, u
-  | _ -> Error.typing "Not a type: %t" (print_term env t)
+  | _ -> Error.typing ~loc "Not a type: %t" (print_term env t)
 
 
-and infer_eq env term o =
+and infer_eq env ((_,loc) as term) o =
   let exp, ty = infer env term in
   match as_u env ty with
   | S.Eq(o', e1, e2, t) ->
       if (o = o') then
         exp, e1, e2, t
       else
-        Error.typing "Wrong sort of equivalence: %t" (print_term env ty)
-  | _ -> Error.typing "Not an equivalence: %t" (print_term env exp)
+        Error.typing ~loc "Wrong sort of equivalence: %t" (print_term env ty)
+  | _ -> Error.typing ~loc "Not an equivalence: %t" (print_term env exp)
 
 
 and find_handler_reduction env k p =
@@ -340,7 +340,7 @@ and check env ((term1, loc) as term) t =
           | S.Pi (_, t1, t2) ->
               let e2 = check (add_parameter x t1 env) term2 t2 in
               S.Lambda(x, t1, e2)
-          | _ -> Error.typing ~loc:loc "Lambda cannot have type %t"
+          | _ -> Error.typing ~loc "Lambda cannot have type %t"
                      (print_term env t)
         end
     | D.Pair (term1, term2) ->
@@ -351,7 +351,7 @@ and check env ((term1, loc) as term) t =
               let t2' = S.beta t2 e1  in
               let e2 = check env term2 t2'  in
               S.Pair(e1, e2)
-          | _ -> Error.typing ~loc:loc "Pair cannot have type %t"
+          | _ -> Error.typing ~loc "Pair cannot have type %t"
                      (print_term env t)
         end
     | _ ->
