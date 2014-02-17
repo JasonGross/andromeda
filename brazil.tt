@@ -91,5 +91,7 @@ assume f : T
 with T_eq
 define app := f O
 
+define eta_test := (Refl f :>  (f == (fun x : nat => f x) @ T))
+
 #context
 

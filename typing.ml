@@ -33,7 +33,7 @@ let print_term env e = Print.term env.ctx.Ctx.names e
 let rec equal env t1 t2 k =
   t1 = t2 ||                    (* Short-circuit in the common case *)
   handled env t1 t2 ||
-  match (whnf env k) with
+  match (as_whnf_for_eta env k) with
       | S.Pi (x, t3, k3) ->
           let env' = add_parameter x t3 env  in
           let t1' = S.App (S.shift 1 t1, S.Var 0) in
@@ -152,11 +152,42 @@ and handled env e1 e2 =
     | [] -> false
     | handler :: rest ->
         let h1, h2 = unshift_handler env handler  in
-        (e1 = h1) && (e2 = h2)  ||  (e1 = h2) && (e2 = h1) || loop rest
+        (S.equal e1 h1 && S.equal e2 h2) ||
+        (S.equal e1 h2 && S.equal e2 h1) ||
+        loop rest
   in
     loop (env.handlers)
 
 
+and find_handler_reduction env k p =
+  let rec loop = function
+    | [] -> whnf env k
+    | handler::rest ->
+        let h1, h2 = unshift_handler env handler  in
+        if (S.equal h1 k && p h2) then
+          h2
+        else if (S.equal h2 k && p h1) then
+          h1
+        else
+          loop rest  in
+  loop env.handlers
+
+and as_pi env k =
+  find_handler_reduction env k (function S.Pi _ -> true | _ -> false)
+
+and as_sigma env k =
+  find_handler_reduction env k (function S.Sigma _ -> true | _ -> false)
+
+and as_u env k =
+  find_handler_reduction env k (function S.U _ -> true | _ -> false)
+
+and as_whnf_for_eta env k =
+  find_handler_reduction env k
+     (function
+        | S.Pi _ | S.Sigma _ | S.U _
+        | S.Eq(S.Ju, _, _, _)
+        | S.Base S.TUnit                -> true
+        | _                             -> false)
 
 
 let rec infer env (term, loc) =
@@ -310,27 +341,6 @@ and infer_eq env ((_,loc) as term) o =
   | _ -> Error.typing ~loc "Not an equivalence: %t" (print_term env exp)
 
 
-and find_handler_reduction env k p =
-  let rec loop = function
-    | [] -> whnf env k
-    | handler::rest ->
-        let h1, h2 = unshift_handler env handler  in
-        if (h1 = k && p h2) then
-          h2
-        else if (h2 = k && p h1) then
-          h1
-        else
-          loop rest  in
-  loop env.handlers
-
-and as_pi env k =
-  find_handler_reduction env k (function S.Pi _ -> true | _ -> false)
-
-and as_sigma env k =
-  find_handler_reduction env k (function S.Sigma _ -> true | _ -> false)
-
-and as_u env k =
-  find_handler_reduction env k (function S.U _ -> true | _ -> false)
 
 and check env ((term1, loc) as term) t =
   match term1 with
@@ -366,7 +376,7 @@ and check env ((term1, loc) as term) t =
               match as_u env t' with
               | S.U u' when S.universe_le u' u -> e
               | _ ->
-                    Error.typing ~loc "expression %t has type %t\nbut should have type %t"
+                    Error.typing ~loc "expression %t has type %t\nBut should have type %t"
                       (print_term env e) (print_term env t') (print_term env t)
             end
         | _ ->
