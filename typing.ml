@@ -259,7 +259,12 @@ let rec infer env (term, loc) =
           let ty3, u3 = infer_ty env term3 in
           let e1 = check env term1 ty3  in
           let e2 = check env term2 ty3  in
-          S.Eq (o, e1, e2, ty3), S.U u3
+
+          (* Make sure that judgmental equivalences are not marked fibered *)
+          let ubase = match o with D.Pr -> S.Fib 0 | D.Ju -> S.Type 0 in
+          let u = S.universe_join ubase u3  in
+
+          S.Eq (o, e1, e2, ty3), S.U u
         end
 
     | D.Refl(o, term) ->
