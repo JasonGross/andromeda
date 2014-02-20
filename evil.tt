@@ -10,9 +10,8 @@ define fix :=
 
 define fix_works :=
   fun (f : D -> D) =>
-  handle
-    f (fix f) == fix f @ D
-  with
-  end
+    (Refl (fix f) :> f (fix f) == fix f @ D)
+
+define horrible := handle fix fix with scott end
 
 #context

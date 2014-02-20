@@ -53,8 +53,11 @@ let rec equal env t1 t2 k =
       | _ -> equal_structural env t1 t2
 
 and equal_structural env t1 t2 =
+Print.debug "equal_structural: %t == %t@." (print_term env t1) (print_term env t2) ;
   let t1' = whnf env t1 in
+Print.debug "t1' = %t@." (print_term env t1') ;
   let t2' = whnf env t2 in
+Print.debug "t2' = %t@." (print_term env t2') ;
   S.equal t1' t2' ||       (* Catches U/Var/Const/Base; also, might short-circuit *)
   handled env t1' t2' ||
   match t1', t2' with
