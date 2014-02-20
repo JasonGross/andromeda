@@ -81,11 +81,27 @@ define pair4 := handle
                 end
 
 //////////////////////////
+// Another example
+//////////////////////////
+assume a b c d : nat
+assume Eab : a == b @ nat
+assume Ecd : c == d @ nat
+define u := (a, c)
+define v := (b, d)
+
+define make_pair_equality :=
+  fun (x y z w : nat) (p : x == y @ nat) (q : z == w @ nat) =>
+  (handle (Refl (x,z) :> (x,z) == (y,w) @ nat * nat) with p | q end)
+
+define Euv := make_pair_equality a b c d Eab Ecd
+
+
+//////////////////////////
 // Type-Conversion testing
 //////////////////////////
 
 assume T : Type
-assume T_eq : (T == nat -> nat @ Type)
+assume T_eq : (nat -> nat == T @ Type)
 assume f : T
 
 with T_eq
