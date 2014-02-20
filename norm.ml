@@ -20,7 +20,7 @@ let rec whnf ctx e =
           begin
             match whnf ctx e1 with
             | S.Lambda(_, _, eBody) ->
-                S.beta eBody e2
+                whnf ctx (S.beta eBody e2)
             | (S.Var _ | S.App _ | S.Proj _ ) as e1' ->
                 S.App(e1', e2)
             | e1' ->
