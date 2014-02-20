@@ -1,0 +1,13 @@
+TITLE: Brazilian type checking
+
+AUTHOR:
+Andrej Bauer, University of Ljubljana, Slovenia
+Christopher A. Stone, Harvey Mudd College, USA
+
+ABSTRACT:
+
+Current proof assistants use a hard-coded definition of judgmental equality for deciding the validity of proofs.
+
+Current proof assistants rely on judgmental equality being checked by a fixed algorithm known to be sound and complete. Other equations may be expressed by means of propositional identity types and manually inserted type coercions. In some situations, we would like to avoid the overhead of coercions by actually assuming new judgmental equalities. Unfortunately, this may render the equational theory undecidable and break the checking algorithm.
+
+Voevodsky has proposed a type theory with two equality types, one propositional and one judgmental. This lets us hypothesize judgmental equalities for use during type checking, but which make judgmental equality potentially undecidable. Decidability can be regained if terms contain sufficiently detailed type coercions that prove the necessary equivalences. But that's no better than propositional equality. Rather than providing full proofs of equivalences, we propose to use algebra effect handlers to extend the  
