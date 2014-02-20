@@ -55,7 +55,7 @@ let rec equal env t1 t2 k =
 and equal_structural env t1 t2 =
   let t1' = whnf env t1 in
   let t2' = whnf env t2 in
-  t1' = t2' ||       (* Catches U/Var/Const/Base; also, might short-circuit *)
+  S.equal t1' t2' ||       (* Catches U/Var/Const/Base; also, might short-circuit *)
   handled env t1' t2' ||
   match t1', t2' with
   | S.Pi    (x, t11, t12), S.Pi    (_, t21, t22)
