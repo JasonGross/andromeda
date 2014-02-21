@@ -54,13 +54,20 @@ Print.debug "equal: %t == %t at %t@." (print_term env t1) (print_term env t2) (p
       | _ -> equal_structural env t1 t2
 
 and equal_structural env t1 t2 =
-Print.debug "equal_structural: %t == %t@." (print_term env t1) (print_term env t2) ;
+
+  Print.debug "equal_structural: %t == %t@." (print_term env t1) (print_term env t2) ;
+
+  handled env t1 t2 ||     (* in case we didn't get here via equal *)
+
   let t1' = whnf env t1 in
-Print.debug "t1' = %t@." (print_term env t1') ;
+  Print.debug "t1' = %t@." (print_term env t1') ;
   let t2' = whnf env t2 in
-Print.debug "t2' = %t@." (print_term env t2') ;
+  Print.debug "t2' = %t@." (print_term env t2') ;
+
   S.equal t1' t2' ||       (* Catches U/Var/Const/Base; also, might short-circuit *)
+
   handled env t1' t2' ||
+
   match t1', t2' with
   | S.Pi    (x, t11, t12), S.Pi    (_, t21, t22)
   | S.Sigma (x, t11, t12), S.Sigma (_, t21, t22) ->
@@ -153,7 +160,7 @@ and unshift_handler env (installLevel, h1, h2) =
  * to worry about symmetry, i.e., which direction to specify the equivalence *)
 and handled env e1 e2 =
   let rec loop = function
-    | [] -> 
+    | [] ->
 Print.debug "handle search failed@.";
 false
     | handler :: rest ->
@@ -383,12 +390,12 @@ and check env ((term1, loc) as term) t =
               match as_u env t' with
               | S.U u' when S.universe_le u' u -> e
               | _ ->
-                    Error.typing ~loc "expression %t has type %t\nBut should have type %t"
+                    Error.typing ~loc "expression %t@ has type %t@\nBut should have type %t"
                       (print_term env e) (print_term env t') (print_term env t)
             end
         | _ ->
             if not (equal_structural env t' t ) then
-              Error.typing ~loc "expression %t has type %t\nbut should have type %t"
+              Error.typing ~loc "expression %t@ has type %t@\nbut should have type %t"
               (print_term env e) (print_term env t') (print_term env t)
             else
               e
