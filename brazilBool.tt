@@ -24,6 +24,13 @@ define P_is_constant :=
     | (cond_false (Type 0) nat nat)
   end
 
+define P_is_constant' :=
+  fun b : bool =>
+    bool_ind (fun b => P b == nat @ Type 0)
+       (cond_false (Type 0) nat nat)
+       (cond_true (Type 0) nat nat)
+       b
+
 assume x : bool
 
 define answer :=
