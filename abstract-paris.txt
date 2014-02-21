@@ -23,5 +23,5 @@ without help from the user.
 Rather than reimpose the full overhead of term-level coercions for judgmental
 equality, we propose algebraic effect handlers as a general mechanism to provide
 local extensions to the proof assistant's algorithms.  As a special case, we
-retain a simple form of handlers even in the final proof terms, small hints that
-are used to extend the trusted verifier in sound ways.
+retain a simple form of handlers even in the final proof terms, small
+proof-specific hints that extend the trusted verifier in sound ways.
