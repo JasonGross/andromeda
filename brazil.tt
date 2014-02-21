@@ -1,8 +1,8 @@
-assume nat : Type 
+assume nat : type 
 assume O : nat
 assume S : nat -> nat
 
-assume List : nat -> Type
+assume List : nat -> type
 
 /////////////////////////
 // Pairing and Projection
