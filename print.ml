@@ -96,7 +96,7 @@ and lambda xs x t e ppf =
               (term ~max_level:3 xs t)
               (term ~max_level:3 xs p)
           | S.U (S.Type i) -> print "Type(%d)" i
-          | S.U (S.Fib i)  -> print "Fib(%d)" i
+          | S.U (S.Fib i)  -> print "type(%d)" i
           | S.Base (S.TUnit) -> print "unit"
           | S.Const (S.Unit) -> print "()"
 

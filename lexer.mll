@@ -15,12 +15,12 @@
     (*("in", IN) ;*)
     (*("return", RETURN) ;*)
     ("with", WITH) ;
-    ("Type", FIB);
-    ("type", TYPE);
+    ("type", FIB);
+    ("Type", TYPE);
     ("Refl", REFLEQUIV);
     ("refl", REFLEQUAL);
-    ("Eq", EQEQUIV);
-    ("eq", EQEQUAL);
+    ("eq", EQEQUIV);
+    ("Eq", EQEQUAL);
   ]
 
   let position_of_lex lex =
