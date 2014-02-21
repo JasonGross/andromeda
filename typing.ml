@@ -31,6 +31,7 @@ let print_term env e = Print.term env.ctx.Ctx.names e
 
 
 let rec equal env t1 t2 k =
+Print.debug "equal: %t == %t at %t@." (print_term env t1) (print_term env t2) (print_term env k);
   t1 = t2 ||                    (* Short-circuit in the common case *)
   handled env t1 t2 ||
   match (as_whnf_for_eta env k) with
@@ -75,7 +76,7 @@ Print.debug "t2' = %t@." (print_term env t2') ;
       o1 = o2 &&
       equal_structural env t1 t2 &&
       equal env e11 e21 t1 &&
-      equal env e21 e22 t1
+      equal env e12 e22 t1
 
   | S.Lambda(x, t1, e1), S.Lambda(_, t2, e2) ->
       equal_structural env t1 t2 &&
@@ -152,9 +153,12 @@ and unshift_handler env (installLevel, h1, h2) =
  * to worry about symmetry, i.e., which direction to specify the equivalence *)
 and handled env e1 e2 =
   let rec loop = function
-    | [] -> false
+    | [] -> 
+Print.debug "handle search failed@.";
+false
     | handler :: rest ->
         let h1, h2 = unshift_handler env handler  in
+Print.debug "handle search e1 = %t@. and e2 = %t@. and h1 = %t@. and h2 = %t@." (print_term env e1) (print_term env e2) (print_term env h1) (print_term env h2) ;
         (S.equal e1 h1 && S.equal e2 h2) ||
         (S.equal e1 h2 && S.equal e2 h1) ||
         loop rest
