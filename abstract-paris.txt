@@ -6,8 +6,22 @@ Christopher A. Stone, Harvey Mudd College, USA
 
 ABSTRACT:
 
-Current proof assistants use a hard-coded definition of judgmental equality for deciding the validity of proofs.
+Proof assistants verify that inputs are correct up to judgmental equality.
+Proofs are easier and smaller if equalities without computational content are
+verified by an oracle, because proof terms for these equations can be omitted.
+In order to keep judgmental equality decidable, though, typical proof assistants
+use a limited definition implemented by a fixed equivalence algorithm.  While
+other equalities can be expressed using propositional identity types and
+explicit equality proofs and coercions, in some situations these create
+prohibitive levels of overhead in the proof.
 
-Current proof assistants rely on judgmental equality being checked by a fixed algorithm known to be sound and complete. Other equations may be expressed by means of propositional identity types and manually inserted type coercions. In some situations, we would like to avoid the overhead of coercions by actually assuming new judgmental equalities. Unfortunately, this may render the equational theory undecidable and break the checking algorithm.
+Voevodsky has proposed a type theory with two identity types, one propositional
+and one judgmental. This lets us hypothesize new judgmental equalities for use
+during type checking, but generally renders the equational theory undecidable
+without help from the user.
 
-Voevodsky has proposed a type theory with two equality types, one propositional and one judgmental. This lets us hypothesize judgmental equalities for use during type checking, but which make judgmental equality potentially undecidable. Decidability can be regained if terms contain sufficiently detailed type coercions that prove the necessary equivalences. But that's no better than propositional equality. Rather than providing full proofs of equivalences, we propose to use algebra effect handlers to extend the  
+Rather than reimpose the full overhead of term-level coercions for judgmental
+equality, we propose algebraic effect handlers as a general mechanism to provide
+local extensions to the proof assistant's algorithms.  As a special case, we
+retain a simple form of handlers even in the final proof terms, small hints that
+are used to extend the fixed but trusted verifier in sound ways.
