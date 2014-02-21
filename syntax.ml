@@ -272,7 +272,7 @@ let rec equal e1 e2 =
   | Pi(_, t11, t12), Pi(_, t21, t22)
   | Sigma(_, t11, t12), Sigma(_, t21, t22)
   | Pair(t11, t12), Pair(t21, t22)
-  | App(t11, t12), Pair(t21, t22) ->
+  | App(t11, t12), App(t21, t22) ->
       equal t11 t21 && equal t12 t22
 
   | Proj(i1, t1), Proj(i2, t2) ->
@@ -291,7 +291,6 @@ let rec equal e1 e2 =
 
   | (Var _ | Lambda _ | Pi _ | App _ | Sigma _ | Pair _ | Proj _
       | Refl _ | Eq _ | J _ | U _ | Base _ | Const _), _ -> false
-
 
 type operation =
   | Inhabit of term
