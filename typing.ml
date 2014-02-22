@@ -32,7 +32,7 @@ let print_term env e = Print.term env.ctx.Ctx.names e
 
 let rec equal env t1 t2 k =
 Print.debug "equal: %t == %t at %t@." (print_term env t1) (print_term env t2) (print_term env k);
-  t1 = t2 ||                    (* Short-circuit in the common case *)
+  S.equal t1 t2 ||                    (* Short-circuit in the common case *)
   handled env t1 t2 ||
   match (as_whnf_for_eta env k) with
       | S.Pi (x, t3, k3) ->
@@ -53,11 +53,21 @@ Print.debug "equal: %t == %t at %t@." (print_term env t1) (print_term env t2) (p
           true
       | _ -> equal_structural env t1 t2
 
+(* Relies on a subsumptive universe structure, so that we can be
+ * sure that if t1 : U(i) and t2 : U(j) then they both belong to
+ * some common universe U(max{i,j])
+ *)
+and equal_at_some_universe env t1 t2 =
+  Print.debug "equal_at_some_universe: %t == %t@."
+      (print_term env t1) (print_term env t2);
+  S.equal t1 t2 ||
+  handled env t1 t2 ||
+  equal_structural env t1 t2
+
+
 and equal_structural env t1 t2 =
 
   Print.debug "equal_structural: %t == %t@." (print_term env t1) (print_term env t2) ;
-
-  handled env t1 t2 ||     (* in case we didn't get here via equal *)
 
   let t1' = whnf env t1 in
   Print.debug "t1' = %t@." (print_term env t1') ;
@@ -71,25 +81,27 @@ and equal_structural env t1 t2 =
   match t1', t2' with
   | S.Pi    (x, t11, t12), S.Pi    (_, t21, t22)
   | S.Sigma (x, t11, t12), S.Sigma (_, t21, t22) ->
-      equal_structural env                       t11 t21 &&
-      equal_structural (add_parameter x t11 env) t12 t22
+      equal_at_some_universe env                       t11 t21 &&
+      equal_at_some_universe (add_parameter x t11 env) t12 t22
 
   | S.Refl(o1, t1, k1), S.Refl(o2, t2, k2) ->
       o1 = o2 &&
-      equal_structural env k1 k2 &&
+      equal_at_some_universe env k1 k2 &&
       equal env t1 t2 k1
 
   | S.Eq(o1, e11, e12, t1), S.Eq(o2, e21, e22, t2) ->
       o1 = o2 &&
-      equal_structural env t1 t2 &&
+      equal_at_some_universe env t1 t2 &&
       equal env e11 e21 t1 &&
       equal env e12 e22 t1
 
   | S.Lambda(x, t1, e1), S.Lambda(_, t2, e2) ->
-      equal_structural env t1 t2 &&
+      Print.warning "Why is equal_structural comparing two lambdas?";
+      equal_at_some_universe env t1 t2 &&
       equal_structural (add_parameter x t1 env) e1 e2
 
   | S.Pair(e11, e12), S.Pair(e21, e22) ->
+      Print.warning "Why is equal_structural comparing two pairs?";
       equal_structural env e11 e21 &&
       equal_structural env e12 e22
 
@@ -97,13 +109,13 @@ and equal_structural env t1 t2 =
     S.J(o2, c2, w2, a2, b2, t2, p2) ->
       let pathtype = S.Eq(o1, a1, b1, t1) in
       o1 == o2 &&
-      equal_structural env t1 t2 &&
+      equal_at_some_universe env t1 t2 &&
       equal env a1 a2 t1 &&
       equal env b1 b2 t1 &&
       (* OK, at this point we are confident that both paths
        * have the same type *)
       equal env p1 p2 pathtype &&
-      equal_structural
+      equal_at_some_universe
            (add_parameter "_p" pathtype
               (add_parameter "_y" t1
                 (add_parameter "_x" t1 env))) c1 c2   &&
@@ -380,10 +392,6 @@ and check env ((term1, loc) as term) t =
         end
     | _ ->
       let e, t' = infer env term in
-        (* NB: Using equal_structural lets us avoid the question of
-         * which universe to compare t' and t in. Of course, it presumes
-         * they belong to a common universe, so a non-subsumptive
-         * hierarchy would cause problems here. *)
         match t with
         | S.U u ->
             begin
@@ -394,7 +402,7 @@ and check env ((term1, loc) as term) t =
                       (print_term env e) (print_term env t') (print_term env t)
             end
         | _ ->
-            if not (equal_structural env t' t ) then
+            if not (equal_at_some_universe env t' t ) then
               Error.typing ~loc "expression %t@ has type %t@\nbut should have type %t"
               (print_term env e) (print_term env t') (print_term env t)
             else
