@@ -116,4 +116,5 @@ let message msg_type v =
 let error (loc, err_type, msg) = message (err_type) 1 "%s" msg
 let warning msg = message "Warning" 2 msg
 let debug msg = message "Debug" 3 msg
+let equivalence msg = message "Equivalence" 1 msg
 

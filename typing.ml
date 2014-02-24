@@ -128,12 +128,22 @@ and equal_structural env t1 t2 =
       begin
         match equal_path env t1' t2' with
         | Some _ -> true
-        | None   -> false
+        | None   ->
+            begin
+              Print.equivalence "Why is %t == %t ?@."
+                (print_term env t1) (print_term env t2);
+              false
+            end
       end
 
   | (S.Var _ | S.Lambda _ | S.Pi _ | S.App _ | S.Sigma _ |
      S.Pair _ | S.Proj _ | S.Refl _ | S.Eq _ | S.J _ |
-     S.U _ | S.Base _ | S.Const _), _ -> false
+     S.U _ | S.Base _ | S.Const _), _ ->
+            begin
+              Print.equivalence "Why is %t == %t ?@."
+                (print_term env t1) (print_term env t2);
+              false
+            end
 
 
 and equal_path env e1 e2 =
