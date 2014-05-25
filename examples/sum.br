@@ -1,0 +1,38 @@
+Definition Type := Universe f0.
+
+(* sums *)
+Parameter sum : Type -> Type -> Type.
+Parameter inl : forall (A B : Type), A -> sum A B.
+Parameter inr : forall (A B : Type), B -> sum A B.
+
+Parameter sum_elim :
+  forall (A B : Type) (P : sum A B -> Type), (forall (x : A), P (inl A B x)) -> (forall (x : B), P (inr A B x)) -> forall b : sum A B, P b.
+
+Parameter sum_beta_inl :
+  forall (A B : Type) (P : sum A B -> Type) (IHinl : forall (x : A), P (inl A B x)) (IHinr : forall (x : B), P (inr A B x)) (x : A),
+    sum_elim A B P IHinl IHinr (inl A B x) == (IHinl x).
+
+Parameter sum_beta_inr :
+  forall (A B : Type) (P : sum A B -> Type) (IHinl : forall (x : A), P (inl A B x)) (IHinr : forall (x : B), P (inr A B x)) (x : B),
+    sum_elim A B P IHinl IHinr (inr A B x) == (IHinr x).
+
+Rewrite sum_beta_inl.
+Rewrite sum_beta_inr.
+
+Parameter sum_comm :
+  forall (A B : Type) (P : sum A B -> Type) (IHinl : forall (x : A), P (inl A B x)) (IHinr : forall (x : B), P (inr A B x)) (C : forall (x : sum A B), P x -> Type)
+         (f : forall (x : sum A B) (p : P x), C x p)
+         (x : sum A B),
+    sum_elim A B (fun x : sum A B => C x (sum_elim A B P IHinl IHinr x))
+            (fun (x : A) => equation sum_beta_inl in
+                            (f (inl A B x) (IHinl x) :: C (inl A B x) (sum_elim A B P IHinl IHinr (inl A B x))))
+            (fun (x : B) => equation sum_beta_inr in
+                            (f (inr A B x) (IHinr x) :: C (inr A B x) (sum_elim A B P IHinl IHinr (inr A B x))))
+            x
+    == f x (sum_elim A B P IHinl IHinr x).
+
+
+Definition sum_half_eta :=
+  fun (A B : Type) (x : sum A B) =>
+    sum_comm A B (fun (x : sum A B) => sum A B) (fun x : A => inl A B x) (fun x : B => inr A B x) (fun (x : sum A B) (_ : sum A B) => sum A B) (fun (x : sum A B) (_ : sum A B) => x) x
+    :: sum_elim A B (fun _ : sum A B => sum A B) (fun x : A => inl A B x) (fun x : B => inr A B x) x == x.
