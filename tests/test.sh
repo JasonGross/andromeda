@@ -3,8 +3,6 @@
 BASEDIR=`dirname "$0"`
 DIFF=`which diff`
 
-cd "$BASEDIR"
-
 if [ ! -x "$DIFF" ]
 then
     echo "Cannot find the diff command. Exiting."
@@ -31,10 +29,10 @@ then
     VALIDATE=1
 fi
 
-for FILE in $BASEDIR/*.m31
+for FILE in "$BASEDIR"/*.m31
   do
   "$ANDROMEDA" "$FILE" >"$FILE.out" 2>&1
-  if [ -f $FILE.ref ]
+  if [ -f "$FILE.ref" ]
       then
       RESULT=`"$DIFF" "$FILE.out" "$FILE.ref"`
       if [ "$?" = "0" ]
