@@ -4,4 +4,4 @@ before_script:
   - sudo apt-get install -q ocaml menhir
   - ocamlbuild -version
 
-script: make all
+script: make all && make test
