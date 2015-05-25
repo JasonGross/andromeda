@@ -29,6 +29,8 @@ then
     VALIDATE=1
 fi
 
+RET=0
+
 for FILE in "$BASEDIR"/*.m31
   do
   "$ANDROMEDA" "$FILE" >"$FILE.out" 2>&1
@@ -49,7 +51,11 @@ for FILE in "$BASEDIR"/*.m31
           then
           mv "$FILE.out" "$FILE.ref"
           echo "Validated: $FILE"
+          else
+          RET=1
           fi
+      else
+          RET=1
       fi
       fi
 
@@ -58,3 +64,5 @@ for FILE in "$BASEDIR"/*.m31
       echo "Created: $FILE.ref"
   fi
 done
+
+exit $RET
